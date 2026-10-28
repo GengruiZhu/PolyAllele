@@ -1,41 +1,9 @@
-# ---- Python ----
 __pycache__/
-*.py[cod]
-*.egg-info/
-.eggs/
+*.pyc
+*.pyo
 .ipynb_checkpoints/
-
-# ---- GraphAllele run artifacts ----
-.step*_done
-result/
-standardized_results/
+out/
+work/
+*_out/
 *.log
-
-# ---- BLAST database artifacts ----
-*.ndb
-*.nhr
-*.nin
-*.njs
-*.not
-*.nsq
-*.ntf
-*.nto
-*.phr
-*.pin
-*.psq
-*.pdb
-*.pot
-*.ptf
-*.pto
-*.final_clean
-*.db
-
-# ---- large input data (keep the directory + its README) ----
-data/*
-!data/README.md
-
-# ---- editor / OS noise ----
-.vscode/
-.idea/
-*.swp
-.DS_Store
+config.local.ini

@@ -1,90 +1,135 @@
 # Installation
 
-GraphAllele is a Python pipeline that orchestrates several external
-bioinformatics tools. The recommended way to install everything is via Conda.
+PolyAllele v4 is pure Python plus four external command-line tools. There is no
+build step and nothing to compile.
 
 ---
 
-## 1. Conda (recommended)
+## 1. Requirements
+
+| requirement | why |
+|---|---|
+| Python ≥ 3.8 | the pipeline itself (standard library only) |
+| `numpy` | `bin/qc_matrix.py` |
+| `jcvi` (Python package) | MCScan collinear projection — `jcvi.compara.catalog` |
+| `last` (`lastal`, `lastdb`) | the aligner JCVI uses for that projection |
+| `blast` (`makeblastdb`, `blastp`) | the refinement stage |
+| `gffread` | only when `input.target_prep_dir` is **not** supplied |
+
+Disk: the working directory holds per-chromosome sequences, one `.last` file per
+chromosome pair and BLAST databases. Budget roughly 3–5× the size of your genome
+FASTA. For a ~1.5 Gb genome that is ~5–8 GB.
+
+Memory: under 4 GB for genomes up to a few Gb; the BLAST database of a large
+reference protein set dominates.
+
+---
+
+## 2. Conda (recommended)
 
 ```bash
-git clone https://github.com/GengruiZhu/GraphAllele.git
-cd GraphAllele
-
 conda env create -f environment.yml
-conda activate polyalleler
+conda activate polyallele
 ```
 
-This creates an environment named `polyalleler` containing Python and all
-required packages and external tools (BLAST+, gffread, JCVI, LAST, and
-OrthoFinder).
-
-Verify the key tools are visible:
+Then verify:
 
 ```bash
-python   --version
-makeblastdb -version
-blastp   -version
-tblastn  -version
-gffread  --version
-python -m jcvi.compara.catalog --help   >/dev/null && echo "jcvi OK"
-orthofinder -h | head -n 1               # only needed for --auto_og
+python      --version
+lastal      --version | head -1
+blastp      -version | head -1
+gffread     --version
+python -c "import jcvi, numpy; print('python deps OK')"
+python bin/polyallele.py --help
 ```
+
+`environment.yml` already requests everything. On a machine without internet
+access, ask your administrator to pre-populate the environment, or create it from
+a local channel mirror — the pipeline itself never downloads anything.
 
 ---
 
-## 2. Manual installation
+## 3. Manual installation (no conda)
 
-If you prefer not to use the provided environment file, install the
-dependencies yourself.
-
-### 2.1 Python packages
-
-Python >= 3.8 with:
+Install the four tools by whatever means your system provides, then make sure they
+are on `PATH`:
 
 ```bash
-pip install "biopython>=1.79" "pandas>=1.3" "networkx>=2.6"
+for t in lastal makeblastdb blastp gffread; do command -v $t || echo "MISSING: $t"; done
+python -c "import jcvi, numpy" || pip install jcvi numpy
 ```
 
-### 2.2 External tools
-
-Install these and make sure they are on your `PATH`:
-
-| Tool | Notes |
-| --- | --- |
-| BLAST+ (>= 2.12) | provides `makeblastdb`, `blastp`, `tblastn` |
-| gffread | CDS / protein extraction from GFF3 |
-| LAST | pairwise aligner used by JCVI/MCScan |
-| JCVI | `pip install jcvi` (requires LAST on PATH) |
-| OrthoFinder | optional; only needed when running with `--auto_og` |
-
-The fastest route for the external tools is still Bioconda:
-
-```bash
-conda install -c conda-forge -c bioconda blast last gffread jcvi orthofinder
-```
+`jcvi` needs no configuration file for this pipeline. If your `jcvi` build rejects
+an option, note that PolyAllele probes for `--cpus` and adapts automatically.
 
 ---
 
-## 3. Test the installation
+## 4. Verifying the installation on a small dataset
+
+Run the `prep` stage only, then look at the log:
 
 ```bash
-cd GraphAllele/workflow
-python GraphAllele.py --help
+bash run_polyallele.sh config.ini prep
 ```
 
-If the help text prints without import errors, the Python side is ready. Then
-edit `run_GraphAllele.sh` (or pass arguments directly) to point at your data
-and launch a run. See the [README](README.md) for usage details.
+A healthy `prep` prints, at the end:
+
+```
+[prep] N homology groups, M target chromosomes
+[prep]   Group_01 -> reference Chr01: 11 chromosomes Chr1A..Chr1K
+...
+[prep] manifest: .../polyallele_work/manifest.tsv
+```
+
+Common failures:
+
+| message | cause |
+|---|---|
+| `reference_gff and reference_cds are required` | `[input]` not filled in |
+| `gffread not found in PATH` | install gffread, or supply `target_prep_dir` |
+| `no CDS for target chromosome X` | the chromosome has no `.cds`, or its name does not match the group definition |
+| `cannot determine the reference chromosome for Group_XX` | the group name carries no number — fill in `reference.group_ref_map` |
 
 ---
 
-## 4. Notes
+## 5. Running on a cluster
 
-- The pipeline writes BLAST databases into temporary sandboxes, so it does not
-  pollute your reference data directory.
-- Each step is checkpointed; re-running the same command resumes from where it
-  stopped rather than restarting from scratch.
-- `run_GraphAllele.sh` activates the `polyalleler` environment automatically via
-  `conda info --base` (falling back to `$HOME/miniconda3` or `$HOME/anaconda3`),
-  so it contains no hardcoded, account-specific paths.
+Set the scheduler block in `config.ini`:
+
+```ini
+[runtime]
+conda_env    = polyallele
+scheduler    = pbs          ; or slurm
+pbs_queue    = comput
+pbs_ppn      = 16
+pbs_walltime = 12:00:00
+```
+
+`bash run_polyallele.sh` now writes a job script into `work_dir` and submits it.
+Nothing runs on the login node.
+
+The pipeline is **resumable**: if the walltime kills it, re-run the same command and
+the `project` stage will skip every chromosome pair whose `.anchors` file already
+exists. For large genomes, submit `project` on its own first, then the rest:
+
+```bash
+bash run_polyallele.sh config.ini project
+bash run_polyallele.sh config.ini report
+```
+
+**Cluster note — nothing runs on the login node.** If you are wiring this into an
+agent or a batch harness, keep that rule: `run_polyallele.sh` with
+`scheduler = none` executes *wherever you call it*, so only use `none` on a node
+you are entitled to compute on.
+
+---
+
+## 6. Uninstalling
+
+Delete the directory tree:
+
+```bash
+rm -rf polyallele_work polyallele_out
+```
+
+Nothing is installed outside the working directory and the conda environment.

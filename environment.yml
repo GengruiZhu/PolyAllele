@@ -1,21 +1,19 @@
-name: polyalleler
-# Conda environment for GraphAllele.
-#   conda env create -f environment.yml
-#   conda activate polyalleler
+name: polyallele
 channels:
   - conda-forge
   - bioconda
 dependencies:
-  # --- core language / python libraries ---
-  - python>=3.8
-  - pip
-  - biopython>=1.79
-  - pandas>=1.3
-  - networkx>=2.6
-  # --- external bioinformatics tools ---
-  - blast>=2.12        # makeblastdb, blastp, tblastn
-  - last               # pairwise aligner used by JCVI/MCScan
-  - gffread            # CDS / protein extraction from GFF3 + FASTA
-  - jcvi               # MCScan synteny (python -m jcvi.compara.catalog)
-  # --- optional ---
-  - orthofinder        # required ONLY when running with --auto_og
+  - python=3.9
+  - numpy
+  - pandas
+  - biopython
+  - networkx
+  - openpyxl          # only used by optional gene-family calibration tables
+  # --- external tools -------------------------------------------------------
+  - last              # JCVI uses LAST for the pairwise alignment step
+  - blast             # makeblastdb / blastp, for the refinement stage
+  - jcvi              # MCScan implementation (jcvi.compara.catalog)
+  - gffread           # only needed when input.target_prep_dir is not supplied
+  # --- optional -------------------------------------------------------------
+  # - orthofinder      # only if you want to build Orthogroups.tsv yourself
+  - r-base            # only if you want to run R-based downstream figures

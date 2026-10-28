@@ -1,0 +1,3 @@
+version: 4.4
+package: PolyAllele
+mode: position-first allele-matrix pipeline, English-only distribution

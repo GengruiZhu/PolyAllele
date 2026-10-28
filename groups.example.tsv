@@ -1,0 +1,28 @@
+# PolyAllele v4 -- homology-group definition (mode = group_file)
+#
+# One group per line:
+#     GroupName <TAB> Chromosome1 <TAB> Chromosome2 <TAB> ...
+#
+# Rules
+#   * Every group must list the SAME number of chromosomes, unless your genome
+#     genuinely has unequal homoeolog sets (which is common in sugarcane-like
+#     auto-allopolyploids -- it is allowed here).
+#   * The column order within a group defines the subgenome suffix used in the
+#     output columns: the Nth chromosome of a group contributes to Allele_<Nth
+#     letter of chromosomes.subgenomes>.
+#   * Lines starting with # are ignored.
+#
+# The example below is the sugarcane ROC22 (XTT22) grouping actually validated
+# with this pipeline.  Chromosome counts differ per group (5 to 12) because of
+# documented chromosome loss/fusion in modern sugarcane hybrids.
+
+Group_01	Chr1A	Chr1B	Chr1C	Chr1D	Chr1E	Chr1F	Chr1G	Chr1H	Chr1I	Chr1J	Chr1K
+Group_02	Chr2A	Chr2B	Chr2C	Chr2D	Chr2E	Chr2F	Chr2G	Chr2H	Chr2I	Chr2J
+Group_03	Chr3A	Chr3B	Chr3C	Chr3D	Chr3E	Chr3F	Chr3G	Chr3H	Chr3I	Chr3J	Chr3K
+Group_04	Chr4A	Chr4B	Chr4C	Chr4D	Chr4E	Chr4F	Chr4G	Chr4H	Chr4I	Chr4J
+Group_05	Chr5A	Chr5B	Chr5C	Chr5D	Chr5E
+Group_06	Chr6A	Chr6B	Chr6C	Chr6D	Chr6E	Chr6F	Chr6G	Chr6H	Chr6I	Chr6J	Chr6K
+Group_07	Chr7A	Chr7B	Chr7C	Chr7D	Chr7E	Chr7F	Chr7G	Chr7H	Chr7I	Chr7J	Chr7K	Chr7L
+Group_08	Chr8A	Chr8B	Chr8C	Chr8D	Chr8E	Chr8F
+Group_09	Chr9A	Chr9B	Chr9C	Chr9D	Chr9E	Chr9F	Chr9G	Chr9H	Chr9I
+Group_10	Chr10A	Chr10B	Chr10C	Chr10D	Chr10E	Chr10F	Chr10G	Chr10H	Chr10I	Chr10J	Chr10K	Chr10L
